@@ -23,6 +23,7 @@ PLATFORMS
 DEPENDENCIES
   eventmachine (~> 1.0.0.rc.4)
   foreman
+  json
   json-jruby
   mocha
   rake
