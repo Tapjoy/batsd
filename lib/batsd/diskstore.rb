@@ -96,5 +96,26 @@ module Batsd
       FileUtils.rm("#{filename}tmp") rescue nil
     end
 
+    # Remove the file associated with this statistic. In the case of a gauge the statistic
+    # is just the name of the guage such as
+    #    gauges:test.gauge
+    # Otherwise it is the name suffixed with a colon and the retention period for the stat
+    # such as
+    #    counters:test.counter:60
+    #
+    # Also if the parent directories of the file are empty, remove those too
+    def delete(statistic)
+      filename = build_filename(statistic)
+      puts "Deleting statistic #{statistic} in file #{filename}" if ENV["VVERBOSE"]
+      
+      FileUtils.rm filename if File.exists? filename
+
+      filename_parts = filename.split('/')
+      first_dir = filename_parts[-3]
+      second_dir = filename_parts[-2]
+      # these will silently fail if there are still files in the directories
+      FileUtils.rmdir File.join(@root, first_dir, second_dir)
+      FileUtils.rmdir File.join(@root, first_dir)
+    end
   end
 end

@@ -137,5 +137,19 @@ module Batsd
       @redis.sadd "datapoints", key
     end
 
+    # clear out all redis information associated with this key at all retenion levels
+    # Note that this will work but if the receiver process is still running and has
+    # these keys, it could repopulate them at some future flush interval. To be sure
+    # turn off the receiver process when deleting a metric
+    def remove_datapoint(key)
+      unless key.match(/^gauge/)
+        # clear out this metrics zset. Removing all elements removes the set
+        @redis.zremrangebyrank(key,0,-1)  
+        @retentions.each do |retention|
+          @redis.del("#{key}:#{retention}")
+        end
+      end
+      @redis.srem("datapoints",key)
+    end
   end
 end

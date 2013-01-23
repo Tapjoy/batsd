@@ -60,6 +60,11 @@ module Batsd
               end
             when command.match(/ping/i)
               send_data "PONG\n"
+            when command.match(/delete/i)
+              EM.defer do
+                command, metric = msg_split
+                delete_metric(metric)
+              end
             when command.match(/quit|exit/i)
               send_data "BYE\n"
               close_connection
@@ -73,7 +78,25 @@ module Batsd
         end
       end
     end
-    
+
+    # Remove all data and references to the given metric at all retention intervals.
+    # 
+    # Note that this will work but if the receiver process is still running and has
+    # information about this metric, it could repopulate them at some future flush interval.
+    # To be sure turn off the receiver process when deleting metrics.
+    def delete_metric(metric)
+      puts "Deleting metric #{metric}" if ENV["VERBOSE"]
+      if metric.match(/^gauge/)
+        @diskstore.delete(metric)
+      else
+        Batsd::Server.config[:retentions].each do |retention|
+          @diskstore.delete("#{metric}:#{retention[0]}")
+        end
+      end
+      @redis.remove_datapoint(metric)
+    end
+
+
     # Bind to port+2 and serve up data over TCP. Offers access to
     # both the set of datapoints and the values as JSON arrays.
     class Daemon
