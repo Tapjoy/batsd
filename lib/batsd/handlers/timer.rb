@@ -68,6 +68,7 @@ module Batsd
               @redis.store_timer timestamp, "#{key}:count", count 
               @redis.store_timer timestamp, "#{key}:min", values.min
               @redis.store_timer timestamp, "#{key}:max", values.max
+              @redis.store_timer timestamp, "#{key}:slope", values.slope
               @redis.store_timer timestamp, "#{key}:upper_90", values.percentile_90
               if count > 1
                 @redis.store_timer timestamp, "#{key}:stddev", values.standard_dev
@@ -98,15 +99,19 @@ module Batsd
                     values = values.collect(&:to_f)
                     puts "Writing the aggregates for #{values.count} values for #{key} at the #{retention} level to disk." if ENV["VVERBOSE"]
                     count = values.count
-                    ["mean", "count", "min", "max", ["upper_90", "percentile_90"], ["stddev", "standard_dev"]].each do |aggregation|
+                    ["mean", "count", "min", "max", "slope", ["upper_90", "percentile_90"], ["stddev", "standard_dev"]].each do |aggregation|
                       if aggregation.is_a? Array
                         name = aggregation[0]
                         aggregation = aggregation[1]
                       else
                         name = aggregation
                       end
-                      val = (count > 1 ? values.send(aggregation.to_sym) : values.first)
-                      @diskstore.append_value_to_file(@diskstore.build_filename("#{key}:#{name}:#{retention}"), "#{timestamp} #{val}")
+                      begin
+                        val = (count > 1 ? values.send(aggregation.to_sym) : values.first)
+                        @diskstore.append_value_to_file(@diskstore.build_filename("#{key}:#{name}:#{retention}"), "#{timestamp} #{val}")
+                      rescue Exception => e
+                        puts "error storing to disk #{name} #{aggregation} #{e} #{e.backtrace}"
+                      end
                     end
                   end
                 end

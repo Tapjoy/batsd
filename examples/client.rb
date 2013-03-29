@@ -26,7 +26,7 @@ class Client
     keys = query_remote("available")
     keys.collect do |k|
       if k.match /^timer/
-        ["mean", "min", "max", "upper_90", "stddev", "count"].collect{|a| "#{k}:#{a}"}
+        ["mean", "min", "max", "upper_90", "slope", "stddev", "count"].collect{|a| "#{k}:#{a}"}
       else
         k
       end

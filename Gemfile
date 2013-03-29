@@ -6,7 +6,7 @@ gem 'foreman'
 
 gem 'json-jruby', :platform => :jruby
 gem 'json', :platform => :ruby
-
+gem 'linefit'
 
 group :development, :test do
   gem 'yard'
