@@ -1,7 +1,7 @@
 require 'benchmark'
 require 'eventmachine'
 require 'redis'
-
+require 'linefit'
 require 'core-ext/array'
 
 require 'batsd/diskstore'
