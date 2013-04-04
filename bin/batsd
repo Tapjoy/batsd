@@ -75,13 +75,15 @@ begin
       puts d.match(/^timers:/) ? "#{d}:(mean|count|min|max|upper_90|stddev)" : d
     end
   when :delete
-    statistic = ARGV[1]
-    if statistic && !statistic.empty?
-      deletions = Batsd::Deleter.new(config).delete(statistic)
-      puts "Deleted #{deletions.join(",")}." 
-    else
+    statistics = ARGV[1..-1]
+    unless statistics
       puts "Need to specify a statistic."
       exit 1
+    end
+
+    statistics.each do |statistic|
+      deletions = Batsd::Deleter.new(config).delete(statistic)
+      puts "Deleted #{deletions.join(",")}."
     end
   else
     puts "I don't know how to #{command}."
