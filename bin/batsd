@@ -11,7 +11,7 @@ begin
   options = { config: "config.yml" }
   
   parser = OptionParser.new do |opts|
-    opts.banner = "Usage: batsd [options] (*server|truncate) args"
+    opts.banner = "Usage: batsd [options] (*server|truncate|receiver|stats|datapoints) args"
 
     opts.separator ""
     opts.separator "options:"
@@ -44,9 +44,9 @@ begin
   command = (ARGV[0] || :receiver).downcase.to_sym
   case command
   when :truncate
-    @truncator = Batsd::Truncator.new(config)
+    truncator = Batsd::Truncator.new(config)
     if ARGV[1].to_i.to_s == ARGV[1]
-      @truncator.run(ARGV[1].to_i)
+      truncator.run(ARGV[1].to_i)
     else
       puts "Need to specify a truncation level (#{config[:retentions].keys.join(",")} are configured)."
       exit 1
@@ -69,6 +69,22 @@ begin
                  ms: Batsd::Handler::Timer.new(config)
                }
     Batsd::Receiver::Daemon.new(handlers, config).run
+  when :datapoints
+    # List all available datapoints
+    Batsd::Redis.new(config).datapoints.each do |d|
+      puts d.match(/^timers:/) ? "#{d}:(mean|count|min|max|upper_90|stddev)" : d
+    end
+  when :delete
+    statistics = ARGV[1..-1]
+    unless statistics
+      puts "Need to specify a statistic."
+      exit 1
+    end
+
+    statistics.each do |statistic|
+      deletions = Batsd::Deleter.new(config).delete(statistic)
+      puts "Deleted #{deletions.join(",")}."
+    end
   else
     puts "I don't know how to #{command}."
     exit 1

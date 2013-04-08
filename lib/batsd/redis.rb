@@ -36,7 +36,7 @@ module Batsd
       @retentions.each_with_index do |t, index|
         if index.zero?
           @redis.zadd key, timestamp, "#{timestamp}<X>#{value}"
-        else index.zero?
+        else
           @redis.incrby "#{key}:#{t}", value
           @redis.expire "#{key}:#{t}", t.to_i * 2
         end
@@ -80,6 +80,11 @@ module Batsd
           multi.del(key)
         end.first
       end
+    end
+
+    # Deletes the given key
+    def clear_key(key)
+      @redis.del(key)
     end
     
     # Create an array out of a string of values delimited by <X>
@@ -135,6 +140,13 @@ module Batsd
     #
     def add_datapoint(key)
       @redis.sadd "datapoints", key
+    end
+
+    # Stores a reference to the datapoint in 
+    # the 'datapoints' set
+    #
+    def remove_datapoint(key)
+      @redis.srem "datapoints", key
     end
 
   end
