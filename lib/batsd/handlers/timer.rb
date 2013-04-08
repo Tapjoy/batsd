@@ -95,11 +95,15 @@ module Batsd
               @threadpool.queue ts, keys, retention do |timestamp, keys, retention|
                 keys.each do |key|
                   values = @redis.extract_values_from_string("#{key}:#{retention}")
-                  if values
+                  # we need to specify both cases, because if values is an empty array we will record a null value for the timestamp
+                  # which will mess up the aggregations
+                  if values && values.length > 0
                     values = values.collect(&:to_f)
                     puts "Writing the aggregates for #{values.count} values for #{key} at the #{retention} level to disk." if ENV["VVERBOSE"]
                     count = values.count
-                    ["mean", "count", "min", "max", ["upper_90", "percentile_90"], ["stddev", "standard_dev"]].each do |aggregation|
+                    # explicitly handle count separately because we do not want to record the value if there is only one data point
+                    @diskstore.append_value_to_file(@diskstore.build_filename("#{key}:count:#{retention}"), "#{timestamp} #{count}")
+                    ["mean", "min", "max", ["upper_90", "percentile_90"], ["stddev", "standard_dev"]].each do |aggregation|
                       if aggregation.is_a? Array
                         name = aggregation[0]
                         aggregation = aggregation[1]
