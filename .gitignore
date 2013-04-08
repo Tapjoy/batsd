@@ -24,3 +24,7 @@ doc/Batsd/Server/*
 doc/Examples/*
 doc/js/*.js
 doc/css/*.css
+
+#config
+config.yml
+dump.rdb
